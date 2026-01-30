@@ -91,7 +91,7 @@ class Simulation:
 
         if getattr(self.args, 'ground_plane', False):
             min_z = min(compute_min_z(vertices), compute_min_z(target_vertices) if target_vertices else float('inf'))
-            create_ground_plane(z = min_z)
+            create_ground_plane(z = min_z, friction=self.args.ground_friction)
 
         # Create constraints between bricks
         constraint_ids = create_constraints_between_bricks(

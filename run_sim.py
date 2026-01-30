@@ -108,6 +108,7 @@ def run_simulation(args):
     print("  Right-click on a brick - Toggle fix/unfix")
     
     # Main simulation loop
+    sim_step_count = 0 # for auto-export tracking
     try:
         while p.isConnected():
             # Handle keyboard events
@@ -119,7 +120,8 @@ def run_simulation(args):
                 # Reset the state of interaction controller (clear fixed objects)
                 interaction_controller.reset()
                 # Reset simulation via simulation controller
-                simulation_controller.reset_simulation()                
+                simulation_controller.reset_simulation()    
+                sim_step_count = 0            
                 
                 print("Simulation reset completed.")
 
@@ -134,13 +136,6 @@ def run_simulation(args):
                 break
             if ord('o') in keys and keys[ord('o')] & p.KEY_WAS_TRIGGERED:
                 os.makedirs("output", exist_ok=True)
-                base = os.path.join("output", f"scene_{int(time.time())}_obj")
-                # we export two obj files here
-                export_obj_brick(
-                    file_path=base,
-                    bricks=simulation_controller.simulation_data['bricks'],
-                    visual_mesh=simulation_controller.simulation_data['visual_mesh'],
-                )
                 base = os.path.join("output", f"scene_{int(time.time())}_bottom.obj")
                 export_obj_bottom(
                     file_path=base,
@@ -153,6 +148,16 @@ def run_simulation(args):
             
             # Step simulation (calculate all forces and detect collision in Bullet engine)
             simulation_controller.step_simulation()
+
+            if not simulation_controller.is_paused:
+                sim_step_count += 1
+                if getattr(args, 'auto_export_interval', 0) > 0 and sim_step_count % args.auto_export_interval == 0:
+                    base = os.path.join("output/sq2disk", f"auto_scene_step_{sim_step_count}_bottom.obj")
+                    export_obj_bottom(
+                        file_path=base,
+                        bricks=simulation_controller.simulation_data['bricks'],
+                        local_bottom_vertices=simulation_controller.simulation_data['local_coords'],
+                    )
 
             time.sleep(args.timestep)
             
