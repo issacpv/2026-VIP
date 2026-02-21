@@ -42,7 +42,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # Import from existing modules
 from utils.config import *
 from utils.physics_utils import setup_physics_engine
-from utils.export_info import export_obj_brick, export_obj_bottom
+from utils.export_info import export_obj_bottom
 from core.simulation import Simulation
 from core.simulation_controller import SimulationController
 from core.interaction_controller import InteractionController
