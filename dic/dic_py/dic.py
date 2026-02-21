@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 # -----------------------------
 # PARAMETERS
 # -----------------------------
-video_path = r"C:\Users\issac\PyKirigami\dic\dic_video3.mp4"
+video_path = r"C:\Users\***\PyKirigami\dic\video\blue1.mp4"
 E_effective = 1.0   # Relative stress
 
 feature_params = dict(
@@ -148,4 +148,5 @@ plt.plot(stress_history)
 plt.xlabel("Frame")
 plt.ylabel("Relative Stress (normalized)")
 plt.title("Metamaterial Compression Response")
+
 plt.show()
