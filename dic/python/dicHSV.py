@@ -5,7 +5,7 @@ import os
 # ================= SETTINGS =================
 TESTING_MODE = 0  # 0 = save/load HSV, 1 = preset mode (no saving)
 
-HSV_FILE = r"C:\Users\issac\PyKirigami\dic\hsv_settings.txt"
+HSV_FILE = r"C:\Users\***\PyKirigami\dic\hsv_settings.txt"
 TARGET_HEIGHT = 360
 # ============================================
 
@@ -54,7 +54,7 @@ def save_hsv(values):
 hsv_defaults = load_hsv_defaults()
 
 cap = cv2.VideoCapture(
-    r"C:\Users\issac\PyKirigami\dic\video\blue1Long.mp4"
+    r"C:\Users\***\PyKirigami\dic\video\blue1.mp4"
 )
 
 cv2.namedWindow("Tracking")
@@ -131,4 +131,5 @@ while True:
 
 # ---------- Cleanup ----------
 cap.release()
+
 cv2.destroyAllWindows()
