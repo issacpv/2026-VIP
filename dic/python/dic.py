@@ -1,196 +1,180 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-import os
 
-# -----------------------------
-# PARAMETERS
-# -----------------------------
-video_path = r"C:\Users\issac\PyKirigami\dic\video\blue1.mp4"
-HSV_FILE = r"C:\Users\issac\PyKirigami\dic\hsv_settings.txt"
+# ==========================================================
+# USER SETTINGS
+# ==========================================================
+VIDEO_PATH = r"C:\Users\issac\PyKirigami\dic\video\blue1.mp4"
+HSV_FILE = r"C:\Users\issac\PyKirigami\dic\hsvSettings.txt"
+OUTPUT_VIDEO = r"C:\Users\issac\PyKirigami\dic\dic_output.mp4"
 
-TARGET_HEIGHT = 360
-E_effective = 1.0
+TARGET_HEIGHT = 360   # <-- force 360p processing
 
-feature_params = dict(
-    maxCorners=3000,
-    qualityLevel=0.01,
-    minDistance=5,
-    blockSize=7
-)
+ARROW_SPACING = 12
+FLOW_SCALE = 4
+HEAT_ALPHA = 0.55
+GAUSSIAN_BLUR = 5
 
-lk_params = dict(
-    winSize=(21,21),
-    maxLevel=3,
-    criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01)
-)
-
-# -----------------------------
-# RESIZE FUNCTION (360p)
-# -----------------------------
-def resize_to_360p(frame):
-    h, w = frame.shape[:2]
-    scale = TARGET_HEIGHT / h
-    new_width = int(w * scale)
-    return cv2.resize(frame, (new_width, TARGET_HEIGHT),
-                      interpolation=cv2.INTER_AREA)
-
-# -----------------------------
+# ==========================================================
 # LOAD HSV SETTINGS
-# -----------------------------
-def load_hsv():
-    defaults = [0,0,0,255,255,255]
+# ==========================================================
+with open(HSV_FILE, "r") as f:
+    vals = list(map(int, f.read().strip().split(",")))
 
-    if not os.path.exists(HSV_FILE):
-        print("HSV file missing — using defaults.")
-        return defaults
+hmin, smin, vmin, hmax, smax, vmax = vals
+lower_hsv = np.array([hmin, smin, vmin])
+upper_hsv = np.array([hmax, smax, vmax])
 
-    try:
-        with open(HSV_FILE, "r") as f:
-            vals = f.read().strip().split(",")
+print("Loaded HSV mask:", lower_hsv, upper_hsv)
 
-        if len(vals) != 6:
-            return defaults
+# ==========================================================
+# VIDEO LOAD
+# ==========================================================
+cap = cv2.VideoCapture(VIDEO_PATH)
 
-        return [int(v) for v in vals]
-    except:
-        return defaults
+if not cap.isOpened():
+    raise RuntimeError("Could not open video")
 
-LH, LS, LV, UH, US, UV = load_hsv()
-lower_bound = np.array([LH, LS, LV])
-upper_bound = np.array([UH, US, UV])
+fps = cap.get(cv2.CAP_PROP_FPS)
+orig_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+orig_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-kernel = np.ones((5,5), np.uint8)
+# ---- Compute 360p resize ----
+scale = TARGET_HEIGHT / orig_h
+w = int(orig_w * scale)
+h = TARGET_HEIGHT
 
-# -----------------------------
-# LOAD VIDEO
-# -----------------------------
-cap = cv2.VideoCapture(video_path)
-ret, first_frame = cap.read()
-if not ret:
-    raise RuntimeError("Cannot read video")
+print(f"Resizing video from {orig_w}x{orig_h} → {w}x{h}")
 
-# Resize FIRST frame
-first_frame = resize_to_360p(first_frame)
+writer = cv2.VideoWriter(
+    OUTPUT_VIDEO,
+    cv2.VideoWriter_fourcc(*'mp4v'),
+    fps,
+    (w, h)
+)
 
-# -----------------------------
-# INITIAL HSV MASK
-# -----------------------------
-hsv0 = cv2.cvtColor(first_frame, cv2.COLOR_BGR2HSV)
-mask0 = cv2.inRange(hsv0, lower_bound, upper_bound)
-mask0 = cv2.morphologyEx(mask0, cv2.MORPH_OPEN, kernel)
-mask0 = cv2.morphologyEx(mask0, cv2.MORPH_CLOSE, kernel)
+# ==========================================================
+# HELPER FUNCTIONS
+# ==========================================================
+def resize_frame(frame):
+    return cv2.resize(frame, (w, h), interpolation=cv2.INTER_AREA)
 
-prev_gray = cv2.cvtColor(first_frame, cv2.COLOR_BGR2GRAY)
-prev_gray = cv2.bitwise_and(prev_gray, prev_gray, mask=mask0)
 
-# Texture-based lattice detection
-lap = cv2.Laplacian(prev_gray, cv2.CV_64F)
-texture_mask = np.uint8((np.abs(lap) > np.mean(np.abs(lap))) * 255)
-texture_mask = cv2.bitwise_and(texture_mask, mask0)
-
-p0 = cv2.goodFeaturesToTrack(prev_gray, mask=texture_mask, **feature_params)
-if p0 is None:
-    raise RuntimeError("No features detected. Check HSV mask!")
-
-reference_points = p0.copy()
-
-stress_history = []
-frame_count = 0
-
-# -----------------------------
-# PROCESS FRAMES
-# -----------------------------
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        break
-
-    frame = resize_to_360p(frame)
-    frame_count += 1
-
-    # HSV MASK
+def get_material_mask(frame):
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    mask = cv2.inRange(hsv, lower_bound, upper_bound)
+    mask = cv2.inRange(hsv, lower_hsv, upper_hsv)
+
+    kernel = np.ones((5,5), np.uint8)
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    gray = cv2.bitwise_and(gray, gray, mask=mask)
+    return mask
 
-    # -----------------------------
-    # OPTICAL FLOW
-    # -----------------------------
-    p1, st, err = cv2.calcOpticalFlowPyrLK(
-        prev_gray, gray, p0, None, **lk_params
+
+def compute_strain(flow):
+    fx = flow[...,0]
+    fy = flow[...,1]
+
+    dfx_dx = cv2.Sobel(fx, cv2.CV_32F, 1, 0, ksize=3)
+    dfx_dy = cv2.Sobel(fx, cv2.CV_32F, 0, 1, ksize=3)
+    dfy_dx = cv2.Sobel(fy, cv2.CV_32F, 1, 0, ksize=3)
+    dfy_dy = cv2.Sobel(fy, cv2.CV_32F, 0, 1, ksize=3)
+
+    strain = np.sqrt(
+        dfx_dx**2 +
+        dfy_dy**2 +
+        0.5*(dfx_dy + dfy_dx)**2
     )
 
-    valid = st.flatten() == 1
-    good_new = p1[valid][:,0,:]
-    good_ref = reference_points[valid][:,0,:]
+    return strain
 
-    displacement = good_new - good_ref
-    ux = displacement[:,0]
-    uy = displacement[:,1]
 
-    # Remove piston motion (outliers)
-    disp_mag = np.sqrt(ux**2 + uy**2)
-    median_disp = np.median(disp_mag)
-    std_disp = np.std(disp_mag)
+# ==========================================================
+# INITIAL FRAME
+# ==========================================================
+ret, prev_frame = cap.read()
+if not ret:
+    raise RuntimeError("Failed to read first frame")
 
-    keep = disp_mag < median_disp + 2*std_disp
-    good_new = good_new[keep]
-    good_ref = good_ref[keep]
-    ux = ux[keep]
-    uy = uy[keep]
+prev_frame = resize_frame(prev_frame)
 
-    # -----------------------------
-    # STRAIN CALCULATION
-    # -----------------------------
-    y_positions = good_ref[:,1]
-    if len(y_positions) > 10:
-        coeff = np.polyfit(y_positions, uy, 1)
-        strain_yy = coeff[0]
-        stress_history.append(E_effective * strain_yy)
+prev_gray = cv2.cvtColor(prev_frame, cv2.COLOR_BGR2GRAY)
+prev_mask = get_material_mask(prev_frame)
+prev_gray = cv2.bitwise_and(prev_gray, prev_gray, mask=prev_mask)
 
-    # -----------------------------
-    # VISUALIZATION (HSV OVERLAY)
-    # -----------------------------
-    overlay = frame.copy()
-    overlay[mask > 0] = (0, 255, 255)  # yellow mask highlight
+paused = False
 
-    vis_frame = cv2.addWeighted(frame, 0.7, overlay, 0.3, 0)
+# ==========================================================
+# MAIN LOOP
+# ==========================================================
+while True:
 
-    for new, ref in zip(good_new, good_ref):
-        a, b = new
-        c, d = ref
-        cv2.arrowedLine(
-            vis_frame,
-            (int(c), int(d)),
-            (int(a), int(b)),
-            (0,255,0),
-            1,
-            tipLength=0.3
+    if not paused:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        # ---- RESIZE BEFORE PROCESSING ----
+        frame = resize_frame(frame)
+
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        mask = get_material_mask(frame)
+        gray = cv2.bitwise_and(gray, gray, mask=mask)
+
+        # Dense Optical Flow (DIC)
+        flow = cv2.calcOpticalFlowFarneback(
+            prev_gray, gray, None,
+            0.5, 5, 35, 5, 7, 1.5, 0
         )
 
-    cv2.imshow("DIC Tracking (HSV Mask)", vis_frame)
+        # -------- Heatmap --------
+        strain = compute_strain(flow)
+        strain = cv2.GaussianBlur(strain, (GAUSSIAN_BLUR, GAUSSIAN_BLUR), 0)
 
-    if cv2.waitKey(1) & 0xFF == 27:
+        norm = cv2.normalize(strain, None, 0, 255, cv2.NORM_MINMAX)
+        norm = norm.astype(np.uint8)
+
+        heatmap = cv2.applyColorMap(norm, cv2.COLORMAP_JET)
+        heatmap = cv2.bitwise_and(heatmap, heatmap, mask=mask)
+
+        overlay = cv2.addWeighted(frame, 1-HEAT_ALPHA, heatmap, HEAT_ALPHA, 0)
+
+        # -------- Draw Arrows --------
+        for y in range(0, h, ARROW_SPACING):
+            for x in range(0, w, ARROW_SPACING):
+
+                if mask[y, x] == 0:
+                    continue
+
+                dx, dy = flow[y, x]
+                end = (int(x + dx*FLOW_SCALE), int(y + dy*FLOW_SCALE))
+
+                cv2.arrowedLine(
+                    overlay, (x, y), end,
+                    (255,255,255), 1, tipLength=0.3
+                )
+
+        writer.write(overlay)
+        cv2.imshow("DIC Stress Mapping (360p)", overlay)
+
+        prev_gray = gray.copy()
+
+    # -------- Keyboard Controls --------
+    key = cv2.waitKey(30) & 0xFF
+
+    if key == 32:   # SPACE
+        paused = not paused
+        print("Paused" if paused else "Resumed")
+
+    elif key == ord('q'):
+        print("Force quitting...")
         break
 
-    # UPDATE
-    prev_gray = gray.copy()
-    p0 = good_new.reshape(-1,1,2)
-    reference_points = good_ref.reshape(-1,1,2)
-
+# ==========================================================
+# CLEANUP
+# ==========================================================
 cap.release()
+writer.release()
 cv2.destroyAllWindows()
 
-# -----------------------------
-# PLOT STRESS
-# -----------------------------
-plt.plot(stress_history)
-plt.xlabel("Frame")
-plt.ylabel("Relative Stress (normalized)")
-plt.title("Metamaterial Compression Response")
-plt.show()
+print("Finished. Output saved to:", OUTPUT_VIDEO)
