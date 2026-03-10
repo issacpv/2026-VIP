@@ -154,7 +154,7 @@ def build_connected_auxetic_lattice(nx=3, ny=3, nz=3, cell=1.0, reentrant=0.28):
     return nodes, members
 
 # ============================================================
-# 4) Build Bezier curves from members
+# 4) Bezier curves for visualization
 # ============================================================
 def build_bezier_curves(nodes, members,
                         bend_frame=0.02,
@@ -260,64 +260,17 @@ def get_cell_geometry(nodes, i, j, k):
     return cube_faces, face_pyramids, octa_faces
 
 # ============================================================
-# 6) Extents
+# 6) Corner-only extents
 # ============================================================
-def extents(nodes):
-    P = np.stack(list(nodes.values()), axis=0)
-    mins = P.min(axis=0)
-    maxs = P.max(axis=0)
+def corner_extents(nodes):
+    corner_pts = np.stack([p for name, p in nodes.items() if name.startswith("G_")], axis=0)
+    mins = corner_pts.min(axis=0)
+    maxs = corner_pts.max(axis=0)
     return maxs - mins
 
-# ============================================================
-# 7) NEW: kinematic deformation model
-# ============================================================
-def deform_nodes_auxetic(nodes, nx, ny, nz, cell, axial_strain=-0.20, nu_target=-0.60,
-                         inward_boost=0.15):
-    """
-    Applies a simple kinematic auxetic deformation:
-    - compress z by axial_strain
-    - x and y respond using target Poisson ratio
-    - face nodes get a little extra inward pull to emphasize re-entrant collapse
-
-    This is not full FEA, but it gives a visible auxetic compression effect.
-    """
-    Lx = nx * cell
-    Ly = ny * cell
-    Lz = nz * cell
-
-    cx, cy, cz = Lx / 2.0, Ly / 2.0, Lz / 2.0
-
-    # Poisson definition: nu = -eps_lat / eps_ax
-    # so eps_lat = -nu * eps_ax
-    lateral_strain = -nu_target * axial_strain
-
-    new_nodes = {}
-
-    for name, p in nodes.items():
-        x, y, z = p.copy()
-
-        # affine deformation around lattice center
-        x_new = cx + (1.0 + lateral_strain) * (x - cx)
-        y_new = cy + (1.0 + lateral_strain) * (y - cy)
-        z_new = cz + (1.0 + axial_strain)   * (z - cz)
-
-        q = np.array([x_new, y_new, z_new], dtype=float)
-
-        # extra inward collapse for internal face nodes
-        if name.startswith("F_"):
-            radial_xy = np.array([q[0] - cx, q[1] - cy, 0.0])
-            nrm = np.linalg.norm(radial_xy)
-            if nrm > 1e-12:
-                radial_xy = radial_xy / nrm
-                q[:2] -= inward_boost * abs(axial_strain) * cell * radial_xy[:2]
-
-        new_nodes[name] = q
-
-    return new_nodes
-
 def compare_reference_and_deformed(nodes_ref, nodes_def):
-    e1 = extents(nodes_ref)
-    e2 = extents(nodes_def)
+    e1 = corner_extents(nodes_ref)
+    e2 = corner_extents(nodes_def)
 
     eps_x = (e2[0] - e1[0]) / (e1[0] + 1e-12)
     eps_y = (e2[1] - e1[1]) / (e1[1] + 1e-12)
@@ -327,6 +280,125 @@ def compare_reference_and_deformed(nodes_ref, nodes_def):
     nu_y = -eps_y / (eps_z + 1e-12)
 
     return e1, e2, eps_x, eps_y, eps_z, nu_x, nu_y
+
+# ============================================================
+# 7) Spring-network solver
+# ============================================================
+def build_spring_data(nodes, members, k_frame=1.0, k_reentrant=1.0, k_inner=1.0, k_inner_diag=1.0):
+    names = list(nodes.keys())
+    idx = {name: i for i, name in enumerate(names)}
+    X0 = np.stack([nodes[name] for name in names], axis=0)
+
+    springs = []
+    for a, b, kind in members:
+        ia = idx[a]
+        ib = idx[b]
+        L0 = np.linalg.norm(X0[ib] - X0[ia])
+
+        if kind == "frame":
+            k = k_frame
+        elif kind == "reentrant":
+            k = k_reentrant
+        elif kind == "inner":
+            k = k_inner
+        else:
+            k = k_inner_diag
+
+        springs.append((ia, ib, L0, k, kind))
+
+    return names, idx, X0, springs
+
+def solve_spring_network(nodes, members, nx, ny, nz, cell,
+                         axial_strain=-0.10,
+                         k_frame=1.0, k_reentrant=1.0, k_inner=1.0, k_inner_diag=1.0,
+                         dt=0.03, damping=0.98, nsteps=5000, tol=1e-8):
+    names, idx, X0, springs = build_spring_data(
+        nodes, members,
+        k_frame=k_frame,
+        k_reentrant=k_reentrant,
+        k_inner=k_inner,
+        k_inner_diag=k_inner_diag
+    )
+
+    X = X0.copy()
+    V = np.zeros_like(X)
+
+    zmin = X0[:, 2].min()
+    zmax = X0[:, 2].max()
+    Lz = zmax - zmin
+    imposed_top_dz = axial_strain * Lz
+
+    fixed = np.zeros_like(X, dtype=bool)
+    prescribed = np.full_like(X, np.nan)
+
+    # Apply z boundary conditions to ALL nodes on top and bottom surfaces
+    bottom_names = [n for n in names if abs(nodes[n][2] - zmin) < 1e-12]
+    top_names    = [n for n in names if abs(nodes[n][2] - zmax) < 1e-12]
+
+    for n in bottom_names:
+        i = idx[n]
+        fixed[i, 2] = True
+        prescribed[i, 2] = X0[i, 2]
+
+    for n in top_names:
+        i = idx[n]
+        fixed[i, 2] = True
+        prescribed[i, 2] = X0[i, 2] + imposed_top_dz
+
+    # Rigid-body locking using bottom CORNER nodes only
+    bottom_corner_names = [n for n in names if n.startswith("G_") and abs(nodes[n][2] - zmin) < 1e-12]
+    bottom_sorted = sorted(bottom_corner_names)
+
+    if len(bottom_sorted) >= 3:
+        i0 = idx[bottom_sorted[0]]
+        i1 = idx[bottom_sorted[1]]
+        i2 = idx[bottom_sorted[2]]
+
+        fixed[i0, 0] = True
+        fixed[i0, 1] = True
+        prescribed[i0, 0] = X0[i0, 0]
+        prescribed[i0, 1] = X0[i0, 1]
+
+        fixed[i1, 0] = True
+        prescribed[i1, 0] = X0[i1, 0]
+
+        fixed[i2, 1] = True
+        prescribed[i2, 1] = X0[i2, 1]
+
+    mask = np.isfinite(prescribed)
+    X[mask] = prescribed[mask]
+
+    for step in range(nsteps):
+        F = np.zeros_like(X)
+
+        for ia, ib, L0, k, kind in springs:
+            d = X[ib] - X[ia]
+            L = np.linalg.norm(d)
+            if L < 1e-12:
+                continue
+            f = k * (L - L0) * (d / L)
+            F[ia] += f
+            F[ib] -= f
+
+        F[fixed] = 0.0
+
+        V = damping * (V + dt * F)
+        V[fixed] = 0.0
+        X = X + dt * V
+        X[fixed] = prescribed[fixed]
+
+        max_force = np.max(np.linalg.norm(F, axis=1))
+        max_speed = np.max(np.linalg.norm(V, axis=1))
+
+        if step % 200 == 0:
+            print(f"step {step:4d} | max_force = {max_force:.3e} | max_speed = {max_speed:.3e}")
+
+        if max_force < tol and max_speed < tol:
+            print(f"Converged at step {step}")
+            break
+
+    nodes_def = {name: X[idx[name]].copy() for name in names}
+    return nodes_def
 
 # ============================================================
 # 8) Plotting
@@ -423,22 +495,37 @@ if __name__ == "__main__":
     cell = 1.0
     reentrant = 0.30
 
-    # reference geometry
     nodes_ref, members = build_connected_auxetic_lattice(
         nx=nx, ny=ny, nz=nz, cell=cell, reentrant=reentrant
     )
     curves_ref = build_bezier_curves(nodes_ref, members)
 
-    # deformed geometry: compressed in z, auxetic response in x/y
-    nodes_def = deform_nodes_auxetic(
-        nodes_ref, nx, ny, nz, cell,
-        axial_strain=-0.20,   # 20% compression in z
-        nu_target=-0.60,      # auxetic target
-        inward_boost=0.18
+    nodes_def = solve_spring_network(
+        nodes_ref, members, nx, ny, nz, cell,
+        axial_strain=-0.10,
+        k_frame=2.0,
+        k_reentrant=1.0,
+        k_inner=1.0,
+        k_inner_diag=1.0,
+        dt=0.02,
+        damping=0.995,
+        nsteps=8000,
+        tol=1e-7
     )
     curves_def = build_bezier_curves(nodes_def, members)
 
-    # side-by-side plot
+    # Print measured strains BEFORE plotting
+    e1, e2, eps_x, eps_y, eps_z, nu_x, nu_y = compare_reference_and_deformed(nodes_ref, nodes_def)
+
+    print("\n=== Measured strains from corner nodes ===")
+    print("Reference extents [x, y, z]:", e1)
+    print("Deformed extents  [x, y, z]:", e2)
+    print("Lateral strain x:", eps_x)
+    print("Lateral strain y:", eps_y)
+    print("Axial strain z:", eps_z)
+    print("Apparent Poisson ratio nu_x:", nu_x)
+    print("Apparent Poisson ratio nu_y:", nu_y)
+
     fig = plt.figure(figsize=(14, 6))
 
     ax1 = fig.add_subplot(121, projection="3d")
@@ -453,7 +540,7 @@ if __name__ == "__main__":
     ax2 = fig.add_subplot(122, projection="3d")
     plot_lattice_on_ax(
         ax2, nodes_def, curves_def, nx, ny, nz,
-        title="Compressed auxetic deformation",
+        title="Spring-network equilibrium under z compression",
         show_nodes=False,
         fill_external=True,
         fill_internal=True
@@ -461,14 +548,3 @@ if __name__ == "__main__":
 
     plt.tight_layout()
     plt.show()
-
-    # strain check
-    e1, e2, eps_x, eps_y, eps_z, nu_x, nu_y = compare_reference_and_deformed(nodes_ref, nodes_def)
-
-    print("Reference extents [x, y, z]:", e1)
-    print("Deformed extents  [x, y, z]:", e2)
-    print("Lateral strain x:", eps_x)
-    print("Lateral strain y:", eps_y)
-    print("Axial strain z:", eps_z)
-    print("Apparent Poisson ratio nu_x:", nu_x)
-    print("Apparent Poisson ratio nu_y:", nu_y)
