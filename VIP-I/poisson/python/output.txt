@@ -1,0 +1,13 @@
+Loaded HSV mask: [ 85 128  80] [206 229 170]
+Initial width: 103
+Initial height: 209
+
+==============================
+Initial width: 103
+Initial height: 209
+Final width: 79.0
+Final height: 157
+
+Axial strain: -0.24880382775119617
+Lateral strain: -0.23300970873786409
+Poisson ratio: -0.936519790888723
