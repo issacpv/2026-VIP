@@ -4,9 +4,9 @@ import numpy as np
 # ==========================================================
 # USER SETTINGS
 # ==========================================================
-VIDEO_PATH = r"C:\Users\issac\PyKirigami\dic\video\blue1.mp4"
-HSV_FILE = r"C:\Users\issac\PyKirigami\dic\hsvSettings.txt"
-OUTPUT_VIDEO = r"C:\Users\issac\PyKirigami\dic\dic_output.mp4"
+VIDEO_PATH = r"C:\Users\***\PyKirigami\dic\video\blue1.mp4"
+HSV_FILE = r"C:\Users\***\PyKirigami\dic\hsvSettings.txt"
+OUTPUT_VIDEO = r"C:\Users\***\PyKirigami\dic\dic_output.mp4"
 
 TARGET_HEIGHT = 360   # <-- force 360p processing
 
@@ -178,3 +178,4 @@ writer.release()
 cv2.destroyAllWindows()
 
 print("Finished. Output saved to:", OUTPUT_VIDEO)
+
