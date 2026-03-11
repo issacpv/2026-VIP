@@ -5,7 +5,7 @@ import os
 # ================= SETTINGS =================
 TESTING_MODE = 0  # 0 = save/load HSV, 1 = preset mode (no saving)
 
-HSV_FILE = r"C:\Users\***\PyKirigami\dic\hsvSettings.txt"
+HSV_FILE = r"C:\Users\***\PyKirigami\hsv\hsvSettings.txt"
 TARGET_HEIGHT = 360
 # ============================================
 
@@ -133,4 +133,5 @@ while True:
 cap.release()
 
 cv2.destroyAllWindows()
+
 
