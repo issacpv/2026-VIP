@@ -19,19 +19,19 @@ All settings are controlled by the **USER SETTINGS** block at the top of `displa
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `mode` | `1` | Visualization mode (1, 2, 4, or 5). See Modes below. |
+| `mode` | `1` | Visualization mode (1, 2, 3, 4, 5, or 6). See Modes below. |
 | `n_points` | `9` | Number of lattice points. In grid modes, rounded to the nearest factorable grid size. |
-| `ratio` | `0.4` | Triangle shrink factor toward centroid. `0.0` = full size, `1.0` = collapsed to a point. Controls strut width. Values between `0.2`–`0.5` work best. |
+| `ratio` | `0.4` | Simplex shrink factor toward centroid. `0.0` = full size, `1.0` = collapsed to a point. Controls strut width. Values between `0.2`–`0.5` work best. |
 | `nx, ny, nz` | `1, 1, 1` | Background 3D node grid dimensions. Typically leave at default. |
 | `cell` | `1.0` | Physical size of the unit cell. Scales the background grid. |
-| `nz_layers` | `3` | Number of Z layers in 2.5D modes. Minimum of 2. Values above 5 may slow rendering. |
-| `bend_reentrant` | `0.18` | Bezier bow amount for 2-point struts connecting shrunk triangle corners. Higher values deepen the reentrant angle and strengthen the auxetic effect. |
-| `bend_ngon` | `0.14` | Bezier bow amount for n-gon perimeter edges at shared-vertex hubs. Controls curvature of the flexible hinge regions. |
-| `bend_triangle` | `0.12` | Bezier bow amount for the edges of the magenta solid triangle regions. |
-| `bend_vertical` | `0.08` | Bezier bow amount for vertical struts in 2.5D modes only. |
-| `intersect_threshold` | `0.05` | Sensitivity of the intersection warning, as a fraction of mean strut length. Raise to catch more near-misses, lower to suppress minor ones. |
-| `intersect_check` | `True` | Set to `False` to skip intersection checking entirely. Recommended for large lattices where the pairwise check may be slow. |
-
+| `nz_layers` | `3` | Number of Z layers in 2.5D modes (2 and 5) only. Minimum of 2. Values above 5 may slow rendering. |
+| `use_bezier` | `False` | Enables Bezier curved struts and edges. When `False`, straight lines and flat faces are used and the intersection check is skipped entirely. |
+| `bend_reentrant` | `0.18` | Bezier bow amount for 2-point struts connecting shrunk simplex corners. Higher values deepen the reentrant angle and strengthen the auxetic effect. Only applies when `use_bezier = True`. |
+| `bend_ngon` | `0.14` | Bezier bow amount for n-gon/polyhedron perimeter edges at shared-vertex hubs. Controls curvature of the flexible hinge regions. Only applies when `use_bezier = True`. |
+| `bend_triangle` | `0.12` | Bezier bow amount for the edges of the magenta solid simplex face regions. Only applies when `use_bezier = True`. |
+| `bend_vertical` | `0.08` | Bezier bow amount for vertical struts in 2.5D modes only. Only applies when `use_bezier = True`. |
+| `intersect_threshold` | `0.05` | Sensitivity of the intersection check, as a fraction of mean strut length. Raise to catch more near-misses, lower to suppress minor ones. Ignored when `use_bezier = False`. |
+| `intersect_check` | `True` | Set to `False` to skip intersection checking entirely. Ignored when `use_bezier = False`. |
 ---
 
 ## Modes
@@ -84,6 +84,7 @@ auxetic/
 |   ├──displayAuxeticV1.py         — first prototype
 |   ├──displayAuxeticV2.py         — add mode 1, 2, 4, & 5
 |   ├──displayAuxeticV3.py         — add bezier curve + overlap detection
-|   └──displayAuxeticV3.py         — add mode 6
+|   ├──displayAuxeticV2.py         — add mode 6
+|   └──displayAuxeticV3.py         — add mode 3
 └── media/                     — reference images and videos of expected output
 ```
