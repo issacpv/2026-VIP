@@ -13,7 +13,7 @@ pip install numpy matplotlib scipy
 
 ## Configuration
 
-All settings are controlled by the **USER SETTINGS** block at the top of `lattice_viz.py`. No command-line arguments are needed.
+All settings are controlled by the **USER SETTINGS** block at the top of `displayAuxeticV#.py`. No command-line arguments are needed.
 
 ### Parameters
 
@@ -30,7 +30,7 @@ All settings are controlled by the **USER SETTINGS** block at the top of `lattic
 
 ## Modes
 
-Change the mode by editing the `mode` variable at the top of `lattice_viz.py`:
+Change the mode by editing the `mode` variable at the top of `displayAuxeticV#.py`:
 ```python
 mode = 1   # change this value
 ```
@@ -72,6 +72,6 @@ The plot window must be focused for key bindings to work.
 
 ## File Structure
 ```
-lattice_viz.py   — main script (all settings and logic in one file)
+displayAuxeticV#.py   — main script (all settings and logic in one file)
 README.md        — this document
 ```
