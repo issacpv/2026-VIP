@@ -83,6 +83,7 @@ auxetic/
 ├── python/                    — all Python source files
 |   ├──displayAuxeticV1.py         — first prototype
 |   ├──displayAuxeticV2.py         — add mode 1, 2, 4, & 5
-|   └──displayAuxeticV3.py         — add bezier curve + overlap detection
+|   ├──displayAuxeticV3.py         — add bezier curve + overlap detection
+|   └──displayAuxeticV3.py         — add mode 6
 └── media/                     — reference images and videos of expected output
 ```
