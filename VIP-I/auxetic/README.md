@@ -74,6 +74,9 @@ The plot window must be focused for key bindings to work.
 ```
 auxetic/
 ├── README.md
-├── python/          — all Python source files
-└── media/           — reference images and videos of expected output
+├── python/                    — all Python source files
+|   ├──displayAuxetic.py           — first prototype
+|   ├──displayAuxeticV2.py         — add mode 1, 2, 4, & 5
+|   └──displayAuxeticV3.py         — add bezier curve
+└── media/                     — reference images and videos of expected output
 ```
