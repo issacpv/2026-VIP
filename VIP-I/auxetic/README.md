@@ -72,6 +72,8 @@ The plot window must be focused for key bindings to work.
 
 ## File Structure
 ```
-displayAuxeticV#.py   — main script (all settings and logic in one file)
-README.md        — this document
+auxetic/
+├── README.md
+├── python/          — all Python source files
+└── media/           — reference images and videos of expected output
 ```
