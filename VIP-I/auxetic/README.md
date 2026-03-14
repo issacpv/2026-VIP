@@ -9,11 +9,6 @@ A Python tool for generating and visualizing 2D and 2.5D Delaunay-triangulated l
 pip install numpy matplotlib scipy
 ```
 
-Run the script with:
-```bash
-python lattice_viz.py
-```
-
 ---
 
 ## Configuration
