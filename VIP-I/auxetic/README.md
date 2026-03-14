@@ -81,10 +81,11 @@ The plot window must be focused for key bindings to work.
 auxetic/
 ├── README.md
 ├── python/                    — all Python source files
-|   ├──displayAuxeticV1.py         — first prototype
+|   ├──displayAuxeticV1.py         — prototype
 |   ├──displayAuxeticV2.py         — add mode 1, 2, 4, & 5
 |   ├──displayAuxeticV3.py         — add bezier curve + overlap detection
-|   ├──displayAuxeticV2.py         — add mode 6
-|   └──displayAuxeticV3.py         — add mode 3
+|   ├──displayAuxeticV4.py         — add mode 6
+|   ├──displayAuxeticV5.py         — add mode 3
+|   └──displayAuxeticV6.py         — prototype stl generation
 └── media/                     — reference images and videos of expected output
 ```
