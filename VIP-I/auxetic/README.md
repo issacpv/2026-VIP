@@ -86,6 +86,7 @@ auxetic/
 |   ├──displayAuxeticV3.py         — add bezier curve + overlap detection
 |   ├──displayAuxeticV4.py         — add mode 6
 |   ├──displayAuxeticV5.py         — add mode 3
-|   └──displayAuxeticV6.py         — prototype stl generation
+|   ├──displayAuxeticV6.py         — prototype stl generation
+|   └──displayAuxeticV7.py         — prototype stl generation #2
 └── media/                     — reference images and videos of expected output
 ```
