@@ -19,7 +19,7 @@ except ImportError:
 mode = 6         # 1=random 2D, 2=random 2.5D, 3=random 3D
                  # 4=grid 2D,   5=grid 2.5D,   6=grid 3D
 n_points = 9
-ratio = 0.4
+ratio = 0.5
 nx, ny, nz = 1, 1, 1
 cell = 1.0
 nz_layers = 3    # number of layers in 2.5D extrusion (modes 2, 5 only)
