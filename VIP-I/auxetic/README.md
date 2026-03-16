@@ -106,6 +106,7 @@ auxetic/
 |   ├──displayAuxeticV4.py         — add mode 6
 |   ├──displayAuxeticV5.py         — add mode 3
 |   ├──displayAuxeticV6.py         — prototype stl generation
-|   └──displayAuxeticV7.py         — prototype stl generation #2
+|   ├──displayAuxeticV7.py         — prototype stl generation #2
+|   └──displayAuxeticV8.py         — fix n-gon shape
 └── media/                     — reference images and videos of expected output
 ```
