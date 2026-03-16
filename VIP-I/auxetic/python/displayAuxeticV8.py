@@ -48,6 +48,18 @@ strut_radius = 0.02          # physical radius of struts in exported geometry (w
 strut_segments = 6           # cross-section polygon sides for struts (higher = rounder, slower)
 
 # ==========================
+# FEM settings (only used when fem_enabled = True)
+# ==========================
+fem_enabled     = False   # set True to run FEM after export
+fem_E           = 1.0     # Young's modulus of base material (normalized)
+fem_nu          = 0.3     # Poisson ratio of base material
+fem_strain      = 0.05    # applied compressive strain (5%)
+fem_axis        = 2       # compression axis: 0=X, 1=Y, 2=Z
+fem_radius      = 0.02    # strut cross-section radius (world units)
+fem_spoke_ratio = 0.3     # face hub spoke radius as fraction of strut radius
+fem_export_csv  = True    # save FEM results to CSV next to the script
+
+# ==========================
 # Helpers
 # ==========================
 def v(x, y, z):
