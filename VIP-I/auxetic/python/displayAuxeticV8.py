@@ -48,18 +48,6 @@ strut_radius = 0.02          # physical radius of struts in exported geometry (w
 strut_segments = 6           # cross-section polygon sides for struts (higher = rounder, slower)
 
 # ==========================
-# FEM settings (only used when fem_enabled = True)
-# ==========================
-fem_enabled     = False   # set True to run FEM after export
-fem_E           = 1.0     # Young's modulus of base material (normalized)
-fem_nu          = 0.3     # Poisson ratio of base material
-fem_strain      = 0.05    # applied compressive strain (5%)
-fem_axis        = 2       # compression axis: 0=X, 1=Y, 2=Z
-fem_radius      = 0.02    # strut cross-section radius (world units)
-fem_spoke_ratio = 0.3     # face hub spoke radius as fraction of strut radius
-fem_export_csv  = True    # save FEM results to CSV next to the script
-
-# ==========================
 # Helpers
 # ==========================
 def v(x, y, z):
@@ -1287,19 +1275,6 @@ def run_export(points_nd, tri, ratio, mode, nz_layers):
 
     print("--------------\n")
 
-
-# ==========================
-# FEM settings (only used when fem_enabled = True)
-# ==========================
-fem_enabled     = False   # set True to run FEM after export
-fem_E           = 1.0     # Young's modulus of base material (normalized)
-fem_nu          = 0.3     # Poisson ratio of base material
-fem_strain      = 0.05    # applied compressive strain (5%)
-fem_axis        = 2       # compression axis: 0=X, 1=Y, 2=Z
-fem_radius      = 0.02    # strut cross-section radius (world units)
-fem_spoke_ratio = 0.3     # face hub spoke radius as fraction of strut radius
-fem_export_csv  = True    # save FEM results to CSV next to the script
-
 # ==========================
 # 8) Run — single execution
 # ==========================
@@ -1307,50 +1282,6 @@ fem_export_csv  = True    # save FEM results to CSV next to the script
 # Export runs first so it doesn't block on the plot window
 if export_enabled:
     run_export(points_nd, tri_nd, ratio, mode, nz_layers)
-
-# FEM simulation (requires export_enabled=True to generate the STL first)
-if fem_enabled:
-    try:
-        import sys, os as _os
-        # Robustly find the script's directory regardless of how it's launched
-        try:
-            _script_dir = _os.path.dirname(_os.path.abspath(__file__))
-        except NameError:
-            _script_dir = _os.path.abspath('.')
-        if _script_dir not in sys.path:
-            sys.path.insert(0, _script_dir)
-
-        from auxetic_fem import run_fem
-        _fem_bends = {
-            'reentrant': bend_reentrant, 'ngon': bend_ngon,
-            'triangle':  bend_triangle,  'vertical': bend_vertical,
-        }
-        _struts, _faces = collect_export_geometry(
-            points_nd, tri_nd, ratio, mode, nz_layers, _fem_bends
-        )
-        _fem_result = run_fem(
-            strut_paths     = _struts,
-            face_verts_list = _faces,
-            E           = fem_E,
-            nu          = fem_nu,
-            strain      = fem_strain,
-            axis        = fem_axis,
-            radius      = fem_radius,
-            spoke_ratio = fem_spoke_ratio,
-            plot        = True,
-            verbose     = True,
-        )
-        if fem_export_csv and _fem_result:
-            from auxetic_fem import export_results as _fem_export
-            _csv_path = _os.path.join(_script_dir, 'fem_results.csv')
-            _fem_export(_fem_result, _csv_path)
-    except ImportError as _fem_imp:
-        print(f"FEM import error: {_fem_imp}")
-        print(f"  Make sure auxetic_fem.py is in: {_script_dir}")
-    except Exception as _fem_err:
-        import traceback
-        print(f"FEM error: {_fem_err}")
-        traceback.print_exc()
 
 plot_3d_lattice(nodes_combined, points_nd, tri_nd, ratio, mode,
                 nz_layers=nz_layers, show_nodes=False)
