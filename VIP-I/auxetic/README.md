@@ -1,6 +1,6 @@
 # Auxetic Lattice Generator
 
-This Python script generates auxetic-style lattices from triangulated or tetrahedral point sets (random or grid-based, 2D–3D) and exports them as solid meshes for CAD or 3D printing.[code_file:1]
+This Python script generates auxetic-style lattices from triangulated or tetrahedral point sets (random or grid-based, 2D–3D) and exports them as solid meshes for CAD or 3D printing.
 
 ## Features
 
@@ -10,24 +10,24 @@ This Python script generates auxetic-style lattices from triangulated or tetrahe
   - `3`: random 3D Delaunay tetrahedral lattice.
   - `4`: grid-based 2D triangulated lattice.
   - `5`: grid-based 2.5D lattice.
-  - `6`: grid-based 3D lattice with symmetric 6-tetrahedra-per-cube decomposition.[code_file:1]
-- Struts and polygonal hubs built by shrinking simplices toward their centroids with a user-controlled `ratio`.[code_file:1]
-- Automatic detection of high-connectivity “central hubs” and replacement with truncated-octahedron solids.[code_file:1]
+  - `6`: grid-based 3D lattice with symmetric 6-tetrahedra-per-cube decomposition.
+- Struts and polygonal hubs built by shrinking simplices toward their centroids with a user-controlled `ratio`.
+- Automatic detection of high-connectivity “central hubs” and replacement with truncated-octahedron solids.
 - Export options:
   - Binary STL via `numpy-stl`.
   - OBJ with per-triangle normals.
-  - OpenSCAD (`.scad`) using cylinders and extruded polyhedra.[code_file:1]
-- Optional 3D visualization with Matplotlib.[code_file:1]
+  - OpenSCAD (`.scad`) using cylinders and extruded polyhedra.
+- Optional 3D visualization with Matplotlib.
 
 ## Dependencies
 
 Required:
 - `numpy`
 - `matplotlib`
-- `scipy` (for `Delaunay` and `ConvexHull`)[code_file:1]
+- `scipy` (for `Delaunay` and `ConvexHull`)
 
 Optional:
-- `numpy-stl` (for STL export)[code_file:1]
+- `numpy-stl` (for STL export)
 
 Install with:
 ```bash
@@ -69,37 +69,37 @@ Run:
 python auxetic_lattice.py
 ```
 
-When `export_enabled = True`, the script writes output files to the same directory as the script (unless absolute paths are given).[code_file:1]
+When `export_enabled = True`, the script writes output files to the same directory as the script (unless absolute paths are given).
 
 ## Output
 
-Depending on the export flags you will get one or more of:[code_file:1]
+Depending on the export flags you will get one or more of:
 
 - `auxetic_lattice.stl` – solid mesh with tube struts and thickened faces.
 - `auxetic_lattice.obj` – OBJ mesh with vertex normals.
-- `auxetic_lattice.scad` – OpenSCAD model using cylinders and extruded polygons.[code_file:1]
+- `auxetic_lattice.scad` – OpenSCAD model using cylinders and extruded polygons.
 
 Geometry consists of:
 
 - **Struts**: tubular edges along shrunken simplex connections (`strut_radius`, `scad_segments`).
-- **Faces/hubs**: polygons extruded along their Newell normal by `face_thickness`, plus truncated-octahedron hubs where connectivity is high.[code_file:1]
+- **Faces/hubs**: polygons extruded along their Newell normal by `face_thickness`, plus truncated-octahedron hubs where connectivity is high.
 
 ## Mode overview
 
-- **1, 2 (random 2D/2.5D)**: random points in the unit square, 2D Delaunay triangulation, then shrink-and-hub construction; mode 2 stacks layers in z and connects vertically.[code_file:1]
-- **3 (random 3D)**: random points in the unit cube, 3D Delaunay tetrahedra, then shrink-and-hub in 3D.[code_file:1]
-- **4, 5 (grid 2D/2.5D)**: structured 2D grid with center-aligned diagonals for symmetry, with optional vertical stacking and connections in mode 5.[code_file:1]
-- **6 (grid 3D)**: structured 3D grid; each cube is decomposed into 6 tetrahedra whose body diagonals point toward the global lattice center, improving hub symmetry.[code_file:1]
+- **1, 2 (random 2D/2.5D)**: random points in the unit square, 2D Delaunay triangulation, then shrink-and-hub construction; mode 2 stacks layers in z and connects vertically.
+- **3 (random 3D)**: random points in the unit cube, 3D Delaunay tetrahedra, then shrink-and-hub in 3D.
+- **4, 5 (grid 2D/2.5D)**: structured 2D grid with center-aligned diagonals for symmetry, with optional vertical stacking and connections in mode 5.
+- **6 (grid 3D)**: structured 3D grid; each cube is decomposed into 6 tetrahedra whose body diagonals point toward the global lattice center, improving hub symmetry.
 
 ## Tuning parameters
 
 - `ratio`:
   - Smaller values keep hubs near original vertices, shortening struts.
-  - Larger values move hubs toward simplex centroids, lengthening struts.[code_file:1]
+  - Larger values move hubs toward simplex centroids, lengthening struts.
 - `hub_scale`:
-  - Controls truncated-octahedron hub size relative to mean strut reach; around `0.45` yields small gaps, near `0.5` almost touches neighbors.[code_file:1]
+  - Controls truncated-octahedron hub size relative to mean strut reach; around `0.45` yields small gaps, near `0.5` almost touches neighbors.
 - `strut_radius`, `face_thickness`:
-  - Increase for more robust prints, decrease for lighter structures.[code_file:1]
+  - Increase for more robust prints, decrease for lighter structures.
 
 ```text
 auxetic/
