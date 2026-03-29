@@ -1,112 +1,111 @@
-# Lattice Visualization Tool
+# Auxetic Lattice Generator
 
-A Python tool for generating and visualizing 2D and 2.5D Delaunay-triangulated lattice structures in an interactive 3D matplotlib window.
+This Python script generates auxetic-style lattices from triangulated or tetrahedral point sets (random or grid-based, 2D–3D) and exports them as solid meshes for CAD or 3D printing.[code_file:1]
 
----
+## Features
 
-## Requirements
+- Multiple lattice modes:
+  - `1`: random 2D triangulated lattice.
+  - `2`: random 2.5D lattice (stacked layers).
+  - `3`: random 3D Delaunay tetrahedral lattice.
+  - `4`: grid-based 2D triangulated lattice.
+  - `5`: grid-based 2.5D lattice.
+  - `6`: grid-based 3D lattice with symmetric 6-tetrahedra-per-cube decomposition.[code_file:1]
+- Struts and polygonal hubs built by shrinking simplices toward their centroids with a user-controlled `ratio`.[code_file:1]
+- Automatic detection of high-connectivity “central hubs” and replacement with truncated-octahedron solids.[code_file:1]
+- Export options:
+  - Binary STL via `numpy-stl`.
+  - OBJ with per-triangle normals.
+  - OpenSCAD (`.scad`) using cylinders and extruded polyhedra.[code_file:1]
+- Optional 3D visualization with Matplotlib.[code_file:1]
+
+## Dependencies
+
+Required:
+- `numpy`
+- `matplotlib`
+- `scipy` (for `Delaunay` and `ConvexHull`)[code_file:1]
+
+Optional:
+- `numpy-stl` (for STL export)[code_file:1]
+
+Install with:
 ```bash
-pip install numpy matplotlib scipy
+pip install numpy matplotlib scipy numpy-stl
 ```
 
----
+## Basic usage
 
-## Configuration
+Edit the user settings near the top of the script:
 
-All settings are controlled by the **USER SETTINGS** block at the top of `displayAuxeticV#.py`. No command-line arguments are needed.
-
-### Parameters
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `mode` | `1` | Visualization mode (1–6). See Modes below. |
-| `n_points` | `9` | Number of lattice points. In grid modes, rounded to the nearest factorable grid size. |
-| `ratio` | `0.4` | Simplex shrink factor toward centroid. `0.0` = full size, `1.0` = collapsed to a point. Controls strut width. Values between `0.2`–`0.5` work best. |
-| `nx, ny, nz` | `1, 1, 1` | Background 3D node grid dimensions. Typically leave at default. |
-| `cell` | `1.0` | Physical size of the unit cell. Scales the background grid. |
-| `nz_layers` | `3` | Number of Z layers in 2.5D modes (2 and 5) only. Minimum of 2. Values above 5 may slow rendering. |
-| `use_bezier` | `False` | Enables Bezier curved struts and edges. When `False`, straight lines and flat faces are used and the intersection check is skipped entirely. |
-| `bend_reentrant` | `0.18` | Bezier bow amount for 2-point struts connecting shrunk simplex corners. Higher values deepen the reentrant angle and strengthen the auxetic effect. Only applies when `use_bezier = True`. |
-| `bend_ngon` | `0.14` | Bezier bow amount for n-gon/polyhedron perimeter edges at shared-vertex hubs. Controls curvature of the flexible hinge regions. Only applies when `use_bezier = True`. |
-| `bend_triangle` | `0.12` | Bezier bow amount for the edges of the magenta solid simplex face regions. Only applies when `use_bezier = True`. |
-| `bend_vertical` | `0.08` | Bezier bow amount for vertical struts in 2.5D modes only. Only applies when `use_bezier = True`. |
-| `intersect_threshold` | `0.05` | Sensitivity of the intersection check, as a fraction of mean strut length. Raise to catch more near-misses, lower to suppress minor ones. Ignored when `use_bezier = False`. |
-| `intersect_check` | `True` | Set to `False` to skip intersection checking entirely. Ignored when `use_bezier = False`. |
-| `export_enabled` | `False` | Set to `True` to write `.scad` and `.stl` files on run. Export runs before the plot window opens. |
-| `export_scad_path` | `"auxetic_lattice.scad"` | Output path for the OpenSCAD file. Relative paths are resolved to the script's directory. |
-| `export_stl_path` | `"auxetic_lattice.stl"` | Output path for the STL file. Relative paths are resolved to the script's directory. |
-| `export_png_path` | `None` | Set to a filename to render a PNG preview via OpenSCAD. Requires OpenSCAD to be installed. Set to `None` to skip. |
-| `strut_radius` | `0.02` | Physical tube radius for struts in exported geometry, in lattice units. |
-| `face_thickness` | `0.015` | Extrusion thickness for solid faces in exported geometry, in lattice units. |
-| `scad_segments` | `8` | Number of polygon sides for strut cross-sections. Higher values produce rounder tubes but increase file size and render time. |
----
-
-## Modes
-
-Change the mode by editing the `mode` variable at the top of `lattice_viz.py`:
 ```python
-mode = 1   # change this value
+mode        = 6      # 1–6: lattice mode
+n_points    = 25     # number of seed points
+ratio       = 0.5    # shrink factor toward centroid
+nz_layers   = 2      # for 2.5D modes only
+
+ngon_thickness = 0.03
+hub_scale      = 0.45
+
+export_enabled = True
+export_scad    = False
+export_stl     = True
+export_obj     = True
+
+export_scad_path = "auxetic_lattice.scad"
+export_stl_path  = "auxetic_lattice.stl"
+export_obj_path  = "auxetic_lattice.obj"
+
+strut_radius   = 0.02
+face_thickness = 0.015
+scad_segments  = 8
+
+show_plot = False
 ```
 
-| Mode | Name | Description |
-|------|------|-------------|
-| `1` | Random 2D | Randomly placed points triangulated into a flat lattice at z = 0. Produces organic, irregular patterns. Re-run for a new random layout. |
-| `2` | Random 2.5D | Same as Mode 1 but extruded along the Z-axis across `nz_layers` slices, creating a volumetric structure with randomly placed struts. |
-| `3` | Random 3D | Points with fully random x, y, and z coordinates, tetrahedralized via 3D Delaunay triangulation. Produces a true volumetric auxetic structure with irregular geometry. |
-| `4` | Grid 2D | Points arranged in a regular rectangular grid, then triangulated. Produces a uniform, symmetric flat lattice. |
-| `5` | Grid 2.5D | Same as Mode 4 but extruded along Z. Produces a clean, periodic 3D lattice. |
-| `6` | Grid 3D | Points arranged in a regular cubic grid, tetrahedralized in 3D. Produces a clean, periodic volumetric auxetic structure. |
+Run:
 
-> **Note for grid modes (4, 5, 6):** `n_points` should be a composite number so it factors cleanly into a rectangular or cubic grid. Prime numbers fall back to a degenerate layout.
-
----
-
-## Export
-
-Set `export_enabled = True` to generate files on run. Both files are written to the same folder as `lattice_viz.py` by default, or to the absolute path you specify.
-
-**OpenSCAD is not required.** The STL is written directly from Python using `numpy-stl`. The `.scad` file is also written and can be opened in OpenSCAD for further editing, boolean operations, or rendering a cleaner manifold solid if needed.
-
-Export runs before the plot window opens, so files are available even if you close the plot immediately.
-
----
-
-## Interactive Controls
-
-The plot window must be focused for key bindings to work.
-
-### Viewport Rotation
-
-| Key | Action |
-|-----|--------|
-| `↑` Arrow Up | Rotate view upward (increase elevation) |
-| `↓` Arrow Down | Rotate view downward (decrease elevation) |
-| `←` Arrow Left | Rotate view left (decrease azimuth) |
-| `→` Arrow Right | Rotate view right (increase azimuth) |
-| `X` | Snap to X-axis view (elev = 0°, azim = 0°) |
-| `Y` | Snap to Y-axis view (elev = 0°, azim = 90°) |
-| `Z` | Snap to top-down view (elev = 90°, azim = −90°) |
-
-### Closing the Window
-
-- Click the **X** button on the window title bar, or
-- Press **Q** while the plot window is focused (default matplotlib shortcut), or
-- Press **Ctrl+W** on most systems
-
----
-
-## File Structure
+```bash
+python auxetic_lattice.py
 ```
-auxetic/
-├── README.md
-├── python/                    — all Python source files
-|   ├──displayAuxeticV1.py         — prototype
-|   ├──displayAuxeticV2.py         — add mode 1, 2, 4, & 5
-|   ├──displayAuxeticV3.py         — add bezier curve + overlap detection
-|   ├──displayAuxeticV4.py         — add mode 6
-|   ├──displayAuxeticV5.py         — add mode 3
-|   ├──displayAuxeticV6.py         — prototype stl generation
-|   ├──displayAuxeticV7.py         — prototype stl generation #2
-|   └──displayAuxeticV8.py         — fix n-gon shape
-└── media/                     — reference images and videos of expected output
-```
+
+When `export_enabled = True`, the script writes output files to the same directory as the script (unless absolute paths are given).[code_file:1]
+
+## Output
+
+Depending on the export flags you will get one or more of:[code_file:1]
+
+- `auxetic_lattice.stl` – solid mesh with tube struts and thickened faces.
+- `auxetic_lattice.obj` – OBJ mesh with vertex normals.
+- `auxetic_lattice.scad` – OpenSCAD model using cylinders and extruded polygons.[code_file:1]
+
+Geometry consists of:
+
+- **Struts**: tubular edges along shrunken simplex connections (`strut_radius`, `scad_segments`).
+- **Faces/hubs**: polygons extruded along their Newell normal by `face_thickness`, plus truncated-octahedron hubs where connectivity is high.[code_file:1]
+
+## Mode overview
+
+- **1, 2 (random 2D/2.5D)**: random points in the unit square, 2D Delaunay triangulation, then shrink-and-hub construction; mode 2 stacks layers in z and connects vertically.[code_file:1]
+- **3 (random 3D)**: random points in the unit cube, 3D Delaunay tetrahedra, then shrink-and-hub in 3D.[code_file:1]
+- **4, 5 (grid 2D/2.5D)**: structured 2D grid with center-aligned diagonals for symmetry, with optional vertical stacking and connections in mode 5.[code_file:1]
+- **6 (grid 3D)**: structured 3D grid; each cube is decomposed into 6 tetrahedra whose body diagonals point toward the global lattice center, improving hub symmetry.[code_file:1]
+
+## Tuning parameters
+
+- `ratio`:
+  - Smaller values keep hubs near original vertices, shortening struts.
+  - Larger values move hubs toward simplex centroids, lengthening struts.[code_file:1]
+- `hub_scale`:
+  - Controls truncated-octahedron hub size relative to mean strut reach; around `0.45` yields small gaps, near `0.5` almost touches neighbors.[code_file:1]
+- `strut_radius`, `face_thickness`:
+  - Increase for more robust prints, decrease for lighter structures.[code_file:1]
+
+## Visualization
+
+If `show_plot = True`, a Matplotlib 3D viewer opens:[code_file:1]
+
+- Arrow keys: rotate (elevation/azimuth).
+- `x`, `y`, `z`: snap to principal-axis views.[code_file:1]
+
+You can drop this into `README.md` as-is; adjust filenames or descriptions if you rename the script or change defaults.
