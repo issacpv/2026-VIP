@@ -104,7 +104,7 @@ Geometry consists of:
 ```text
 auxetic/
 ├── README.md
-├── python/                    — all Python source files
+├── python/da/                  — all Python source files
 |   ├──displayAuxeticV01.py         — prototype
 |   ├──displayAuxeticV02.py         — add mode 1, 2, 4, & 5
 |   ├──displayAuxeticV03.py         — add bezier curve + overlap detection
