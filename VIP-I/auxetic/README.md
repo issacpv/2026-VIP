@@ -101,11 +101,20 @@ Geometry consists of:
 - `strut_radius`, `face_thickness`:
   - Increase for more robust prints, decrease for lighter structures.[code_file:1]
 
-## Visualization
-
-If `show_plot = True`, a Matplotlib 3D viewer opens:[code_file:1]
-
-- Arrow keys: rotate (elevation/azimuth).
-- `x`, `y`, `z`: snap to principal-axis views.[code_file:1]
-
-You can drop this into `README.md` as-is; adjust filenames or descriptions if you rename the script or change defaults.
+```text
+auxetic/
+├── README.md
+├── python/                    — all Python source files
+|   ├──displayAuxeticV01.py         — prototype
+|   ├──displayAuxeticV02.py         — add mode 1, 2, 4, & 5
+|   ├──displayAuxeticV03.py         — add bezier curve + overlap detection
+|   ├──displayAuxeticV04.py         — add mode 6
+|   ├──displayAuxeticV05.py         — add mode 3
+|   ├──displayAuxeticV06.py         — prototype stl generation
+|   ├──displayAuxeticV07.py         — prototype stl generation #2
+|   └──displayAuxeticV08.py         — fix n-gon shape
+|   └──displayAuxeticV09.py         — prototype stl generation #2
+|   └──displayAuxeticV10.py         — corrected mode 6 symmetry at small n
+|   └──displayAuxeticV11.py         — mode 6 fully corrected (mode 3  broken)
+└── media/                     — reference images and videos of expected output
+```
