@@ -112,9 +112,10 @@ auxetic/
 |   ├──displayAuxeticV05.py         — add mode 3
 |   ├──displayAuxeticV06.py         — prototype stl generation
 |   ├──displayAuxeticV07.py         — prototype stl generation #2
-|   └──displayAuxeticV08.py         — fix n-gon shape
-|   └──displayAuxeticV09.py         — prototype stl generation #2
-|   └──displayAuxeticV10.py         — corrected mode 6 symmetry at small n
-|   └──displayAuxeticV11.py         — mode 6 fully corrected (mode 3  broken)
+|   ├──displayAuxeticV08.py         — fix n-gon shape
+|   ├──displayAuxeticV09.py         — prototype stl generation #2
+|   ├──displayAuxeticV10.py         — corrected mode 6 symmetry at small n
+|   ├──displayAuxeticV11.py         — mode 6 fully corrected (mode 3  broken)
+|   └──displayAuxeticV11.py         — refactored (mode 3  broken)
 └── media/                     — reference images and videos of expected output
 ```
