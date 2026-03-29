@@ -101,6 +101,8 @@ Geometry consists of:
 - `strut_radius`, `face_thickness`:
   - Increase for more robust prints, decrease for lighter structures.
 
+## File Structure
+
 ```text
 auxetic/
 ├── README.md
