@@ -14,9 +14,9 @@ except ImportError:
 # ==========================
 # USER SETTINGS
 # ==========================
-mode        = 3      # 1=random 2D, 2=random 2.5D, 3=random 3D
+mode        = 6      # 1=random 2D, 2=random 2.5D, 3=random 3D
                      # 4=grid 2D,   5=grid 2.5D,   6=grid 3D
-n_points    = 10
+n_points    = 16
 ratio       = 0.5
 nx, ny, nz  = 1, 1, 1
 cell        = 1.0
