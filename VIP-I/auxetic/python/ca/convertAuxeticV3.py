@@ -28,7 +28,7 @@ hub_scale      = 0.45   # truncated octahedron size relative to mean strut reach
                          # ~0.45 = gaps between hubs, ~0.5 = nearly touching
 
 # --- Import settings ---
-import_mesh_path = r'C:\Users\issac\2026-VIP\VIP-I\auxetic\media\CA\V2\hoop3D.stl'
+import_mesh_path = 'hoop3D.stl'
 
 # --- Export settings ---
 export_enabled = True
